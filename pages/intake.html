@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>AI智能问诊单 · 分步引导</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="/assets/theme.css" />
+</head>
+<body class="tcm-bg-paper tcm-ink">
+  <!-- 设计说明：对话式引导 + 结构化表单，降低输入负担。 -->
+  <section class="p-4 space-y-4">
+    <div class="tcm-card p-4">
+      <div class="flex items-center gap-2 mb-2">
+        <i class="fa-solid fa-robot text-green-600"></i>
+        <h3 class="font-semibold">AI智能问诊</h3>
+        <span class="tcm-badge ml-auto">仅供参考</span>
+      </div>
+
+      <div id="chat" class="space-y-2 max-h-48 overflow-auto pr-2">
+        <div class="bubble bubble-ai">您好，我是【<span id="docBrand">医生AI分身</span>】。我将引导您描述病情并收集必要信息，供医生参考。</div>
+      </div>
+
+      <div class="mt-4 space-y-4">
+        <div class="tcm-step">
+          <label class="block text-sm font-medium mb-1">1) 主要症状（主诉）</label>
+          <input id="chief" class="w-full border rounded-lg px-3 py-2" placeholder="例如：近两周经常失眠、易醒" />
+        </div>
+        <div class="tcm-step">
+          <label class="block text-sm font-medium mb-1">2) 症状起始与持续时间</label>
+          <div class="grid grid-cols-2 gap-2">
+            <input id="onset" class="border rounded-lg px-3 py-2" placeholder="起始时间/诱因" />
+            <input id="duration" class="border rounded-lg px-3 py-2" placeholder="持续时长" />
+          </div>
+        </div>
+        <div class="tcm-step">
+          <label class="block text-sm font-medium mb-1">3) 伴随症状</label>
+          <div class="grid grid-cols-2 gap-2 text-sm">
+            <label class="flex items-center gap-2"><input type="checkbox" class="sym" value="头痛"/>头痛</label>
+            <label class="flex items-center gap-2"><input type="checkbox" class="sym" value="乏力"/>乏力</label>
+            <label class="flex items-center gap-2"><input type="checkbox" class="sym" value="口干"/>口干</label>
+            <label class="flex items-center gap-2"><input type="checkbox" class="sym" value="心悸"/>心悸</label>
+            <label class="flex items-center gap-2"><input type="checkbox" class="sym" value="食少"/>食少</label>
+            <label class="flex items-center gap-2"><input type="checkbox" class="sym" value="腹胀"/>腹胀</label>
+          </div>
+        </div>
+        <div class="tcm-step">
+          <label class="block text-sm font-medium mb-1">4) 既往史/过敏史</label>
+          <input id="history" class="w-full border rounded-lg px-3 py-2" placeholder="如：无慢性病史；青霉素过敏" />
+        </div>
+        <div class="tcm-step">
+          <label class="block text-sm font-medium mb-1">5) 起居与情志</label>
+          <div class="grid grid-cols-2 gap-2">
+            <select id="sleep" class="border rounded-lg px-3 py-2">
+              <option value="">睡眠情况</option>
+              <option>良好</option>
+              <option>一般</option>
+              <option>差</option>
+            </select>
+            <select id="appetite" class="border rounded-lg px-3 py-2">
+              <option value="">食欲</option>
+              <option>正常</option>
+              <option>偏少</option>
+              <option>偏多</option>
+            </select>
+            <select id="emotion" class="border rounded-lg px-3 py-2">
+              <option value="">情绪</option>
+              <option>平稳</option>
+              <option>焦虑</option>
+              <option>抑郁</option>
+              <option>易怒</option>
+            </select>
+            <select id="stool" class="border rounded-lg px-3 py-2">
+              <option value="">二便</option>
+              <option>正常</option>
+              <option>便秘</option>
+              <option>溏泄</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 flex gap-3">
+        <button id="next" class="flex-1 tcm-cta rounded-lg py-2 font-medium">下一步 · 舌/面照采集</button>
+      </div>
+      <p class="tcm-disclaimer mt-2">AI问诊仅供参考，最终诊断以医生意见为准。</p>
+    </div>
+  </section>
+
+  <script>
+    // 模拟AI对话提示，降低填写成本
+    function pushAI(text) {
+      const chat = document.getElementById('chat');
+      const div = document.createElement('div');
+      div.className = 'bubble bubble-ai';
+      div.textContent = text;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+    const doc = JSON.parse(window.top.sessionStorage.getItem('doctorProfile')||'{}');
+    if (doc && doc.name) { document.getElementById('docBrand').textContent = doc.name + ' 医师AI分身'; }
+    setTimeout(()=>pushAI('请先简要描述本次就诊的主要症状，例如“近两周入睡困难”。'), 500);
+    setTimeout(()=>pushAI('是否有明显诱因或与作息、饮食相关的变化？'), 1500);
+
+    document.getElementById('next').addEventListener('click', () => {
+      const intake = {
+        chief: document.getElementById('chief').value.trim(),
+        onset: document.getElementById('onset').value.trim(),
+        duration: document.getElementById('duration').value.trim(),
+        symptoms: Array.from(document.querySelectorAll('.sym:checked')).map(x=>x.value),
+        history: document.getElementById('history').value.trim(),
+        lifestyle: {
+          sleep: document.getElementById('sleep').value,
+          appetite: document.getElementById('appetite').value,
+          emotion: document.getElementById('emotion').value,
+          stool: document.getElementById('stool').value,
+        }
+      };
+      try { window.top.sessionStorage.setItem('intakeData', JSON.stringify(intake)); } catch(e) {}
+      window.top.postMessage({ type: 'NAVIGATE', payload: { href: '/pages/capture.html' } }, '*');
+    });
+  </script>
+</body>
+</html>
+
