@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>中医师赋能平台 · 医生AI分身原型</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <style>
+    html, body { height: 100%; }
+    body { background: #f6f6f6; }
+    .app-shell { max-width: 420px; margin: 0 auto; height: 100%; box-shadow: 0 0 0 1px rgba(0,0,0,0.06), 0 10px 30px rgba(0,0,0,0.08); }
+    .app-header { height: 56px; background: linear-gradient(90deg, #8B5E3C, #B08968); }
+    .app-header h1 { font-weight: 600; letter-spacing: 0.5px; }
+    iframe { width: 100%; height: calc(100% - 56px); border: 0; background: #fff; }
+  </style>
+</head>
+<body class="antialiased">
+  <div class="app-shell bg-white h-full flex flex-col">
+    <header class="app-header text-white flex items-center px-4">
+      <i class="fa-solid fa-leaf mr-2"></i>
+      <h1 class="text-lg">中医师 · 医生AI分身</h1>
+      <span id="brandDoctor" class="ml-auto text-sm opacity-90"></span>
+    </header>
+    <iframe id="appFrame" src="/pages/home.html" title="AI分身原型"></iframe>
+  </div>
+
+  <script>
+    // 简易路由：子页面通过 postMessage 请求导航。平台仅赋能，医生为品牌主体。
+    window.addEventListener('message', (event) => {
+      const data = event.data;
+      if (!data || typeof data !== 'object') return;
+      const { type, payload } = data;
+      if (type === 'NAVIGATE') {
+        const frame = document.getElementById('appFrame');
+        frame.src = payload.href;
+      } else if (type === 'SET_DOCTOR') {
+        sessionStorage.setItem('doctorProfile', JSON.stringify(payload));
+        document.getElementById('brandDoctor').textContent = payload.name + ' 医师';
+      }
+    });
+
+    // 初始化医生品牌（若之前已设置）
+    (function() {
+      try {
+        const saved = sessionStorage.getItem('doctorProfile');
+        if (saved) {
+          const doc = JSON.parse(saved);
+          document.getElementById('brandDoctor').textContent = (doc.name || '品牌医生') + ' 医师';
+        }
+      } catch (e) {}
+    })();
+  </script>
+</body>
+</html>
+
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>中医师赋能平台 · 医生AI分身原型</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <style>
+    /* Mimic WeChat Mini Program container with safe area */
+    html, body { height: 100%; }
+    body { background: #f6f6f6; }
+    .app-shell { max-width: 420px; margin: 0 auto; height: 100%; box-shadow: 0 0 0 1px rgba(0,0,0,0.06), 0 10px 30px rgba(0,0,0,0.08); }
+    .app-header { height: 56px; background: linear-gradient(90deg, #8B5E3C, #B08968); }
+    .app-header h1 { font-weight: 600; letter-spacing: 0.5px; }
+    iframe { width: 100%; height: calc(100% - 56px); border: 0; background: #fff; }
+  </style>
+</head>
+<body class="antialiased">
+  <div class="app-shell bg-white h-full flex flex-col">
+    <header class="app-header text-white flex items-center px-4">
+      <i class="fa-solid fa-leaf mr-2"></i>
+      <h1 class="text-lg">中医师 · 医生AI分身</h1>
+      <span id="brandDoctor" class="ml-auto text-sm opacity-90"></span>
+    </header>
+    <iframe id="appFrame" src="/pages/home.html" title="AI分身原型"></iframe>
+  </div>
+
+  <script>
+    // Simple router via iframe src updates; pass shared state via sessionStorage
+    window.addEventListener('message', (event) => {
+      const { type, payload } = event.data;
+      if (type === 'NAVIGATE') {
+        const frame = document.getElementById('appFrame');
+        frame.src = payload.href;
+      } else if (type === 'SET_DOCTOR') {
+        sessionStorage.setItem('doctorProfile', JSON.stringify(payload));
+        document.getElementById('brandDoctor').textContent = payload.name + ' 医师';
+      }
+    });
+
+    // Initialize doctor brand from storage if exists
+    const saved = sessionStorage.getItem('doctorProfile');
+    if (saved) {
+      try { document.getElementById('brandDoctor').textContent = JSON.parse(saved).name + ' 医师'; } catch(e) {}
+    }
+  </script>
+</body>
+</html>

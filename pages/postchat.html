@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>诊后咨询 · AI自动回复与人工切换</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <style>
+    .chat-wrap { height: calc(100vh - 180px); overflow: auto; }
+  </style>
+</head>
+<body class="tcm-bg-paper tcm-ink">
+  <!-- 设计说明：默认由AI处理常见问题；识别紧急或复杂问题时提示人工介入。顶部清晰标注当前模式。 -->
+  <section class="p-4 space-y-3">
+    <div class="tcm-card p-3 flex items-center gap-2">
+      <i class="fa-solid fa-comments"></i>
+      <div class="flex-1">
+        <div class="text-sm"><b>诊后咨询</b> <span id="modeTag" class="tcm-badge ml-1"></span></div>
+        <div class="text-xs text-gray-500">AI用于常见问题、用药提醒；紧急情况将提示联系医生。</div>
+      </div>
+      <button id="toggle" class="bg-white border rounded px-2 py-1 text-sm">切换AI/人工</button>
+    </div>
+
+    <div id="chat" class="tcm-card p-3 chat-wrap space-y-2"></div>
+
+    <div class="tcm-card p-3">
+      <div class="flex gap-2">
+        <input id="input" class="flex-1 border rounded-lg px-3 py-2" placeholder="请输入咨询内容，例如：什么时候服药？" />
+        <button id="send" class="tcm-cta rounded-lg px-4">发送</button>
+      </div>
+      <div class="text-xs text-gray-500 mt-2">提示：如出现胸痛、呼吸困难、持续高热等紧急症状，请立即就医或联系医生。</div>
+    </div>
+  </section>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const defaultMode = params.get('mode') || 'followup';
+    const state = { mode: defaultMode === 'human' ? 'human' : 'ai' };
+
+    const chat = document.getElementById('chat');
+
+    function addMsg(text, who='ai') {
+      const row = document.createElement('div');
+      row.className = 'flex ' + (who==='ai' ? '' : 'justify-end');
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble ' + (who==='ai' ? 'bubble-ai' : 'bubble-user');
+      bubble.innerHTML = text;
+      row.appendChild(bubble);
+      chat.appendChild(row);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function renderMode() {
+      document.getElementById('modeTag').textContent = state.mode === 'ai' ? 'AI自动回复' : '医生人工';
+    }
+
+    document.getElementById('toggle').onclick = () => {
+      state.mode = state.mode === 'ai' ? 'human' : 'ai';
+      renderMode();
+      addMsg('已切换为' + (state.mode==='ai'?'AI自动回复':'医生人工') + '模式。');
+    };
+
+    function aiReply(userText) {
+      // 非医疗建议，仅为原型：匹配常见问题/提醒/紧急识别
+      const t = userText.toLowerCase();
+      if (/(胸痛|呼吸困难|抽搐|晕厥|剧痛)/.test(userText)) {
+        return { text: '检测到可能紧急症状，请立即就医或联系医生。已为您标注“优先人工”。', escalate: true };
+      }
+      if (/什么时候|何时.*服药|怎么吃|用法|用量/.test(userText)) {
+        return { text: '一般建议餐后30分钟内服用，遵医嘱按处方剂量执行。如出现不适请及时反馈。' };
+      }
+      if (/漏.*一.*次|忘记.*吃/.test(userText)) {
+        return { text: '若忘记一次，可在想起后尽快补服；若接近下次服药时间，请跳过，不要双倍剂量。' };
+      }
+      if (/复.*配|快递|到货|物流/.test(userText)) {
+        return { text: '药材由合作药房统一配制并顺丰配送，通常48小时内发出，您可在订单页查看物流。' };
+      }
+      return { text: '您的问题已记录。若需医生进一步判断，我将为您转人工处理。' };
+    }
+
+    document.getElementById('send').onclick = () => {
+      const val = document.getElementById('input').value.trim();
+      if (!val) return;
+      addMsg(val, 'user');
+      document.getElementById('input').value = '';
+      if (state.mode === 'ai') {
+        const res = aiReply(val);
+        addMsg(res.text, 'ai');
+        if (res.escalate) {
+          addMsg('已通知医生查看该条消息。', 'ai');
+        }
+      } else {
+        addMsg('已转医生人工，预计30分钟内回复。', 'ai');
+      }
+    };
+
+    // 用药提醒模拟：进入页面后给出示例提醒
+    setTimeout(()=> addMsg('用药提醒：今日晚间请按医嘱服药，避免辛辣刺激性食物。'), 800);
+    renderMode();
+  </script>
+</body>
+</html>
+

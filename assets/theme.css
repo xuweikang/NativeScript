@@ -1,0 +1,31 @@
+/* 专业医疗 + 中医元素主题（柔和棕金、纸感背景） */
+:root {
+  --tcm-brown: #8B5E3C;
+  --tcm-brown-2: #B08968;
+  --tcm-paper: #FAF7F2;
+  --tcm-ink: #2F2A26;
+  --tcm-accent: #7FB069; /* 草本绿色 */
+}
+
+.tcm-bg-paper { background: var(--tcm-paper); }
+.tcm-ink { color: var(--tcm-ink); }
+.tcm-card { background: #fff; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
+.tcm-badge { background: rgba(139,94,60,0.08); color: var(--tcm-brown); border: 1px dashed rgba(139,94,60,0.25); border-radius: 999px; padding: 2px 10px; font-size: 12px; }
+.tcm-disclaimer { color: #6b7280; font-size: 12px; }
+.tcm-cta { background: linear-gradient(90deg, var(--tcm-brown), var(--tcm-brown-2)); color: #fff; }
+.tcm-cta:disabled { opacity: .6; }
+.tcm-step { border-left: 3px solid rgba(139,94,60,.25); padding-left: 12px; }
+
+/* 仿小程序底部安全区 */
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+/* 简易聊天气泡样式 */
+.bubble { max-width: 80%; padding: 10px 12px; border-radius: 14px; font-size: 14px; }
+.bubble-ai { background: #F2ECE6; color: #3b3b3b; border: 1px solid rgba(139,94,60,.15); }
+.bubble-user { background: #DCF7E3; color: #1f2937; border: 1px solid rgba(127,176,105,.25); }
+
+/* 拍照取景框引导 */
+.capture-frame { position: relative; border: 2px dashed rgba(139,94,60,.5); border-radius: 16px; }
+.capture-overlay { position: absolute; inset: 0; pointer-events: none; }
+.capture-hint { position: absolute; left: 50%; transform: translateX(-50%); bottom: 10px; background: rgba(0,0,0,.55); color: #fff; padding: 6px 10px; border-radius: 999px; font-size: 12px; }
+

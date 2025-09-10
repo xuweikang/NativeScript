@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>医生主页 · AI分身入口</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="/assets/theme.css" />
+</head>
+<body class="tcm-bg-paper tcm-ink">
+  <!-- 设计说明：主页突出医生品牌，AI为医生分身而非平台服务。 -->
+  <section class="p-4 space-y-4">
+    <div class="tcm-card p-4 flex items-center gap-4">
+      <img id="docAvatar" src="https://images.unsplash.com/photo-1550831107-1553da8c8464?q=80&w=200" alt="医生头像" class="w-14 h-14 rounded-full object-cover" />
+      <div class="flex-1">
+        <div class="flex items-center gap-2">
+          <h2 id="docName" class="text-lg font-semibold">张衡</h2>
+          <span class="tcm-badge">北京同仁堂</span>
+        </div>
+        <p class="text-sm text-gray-600">中医内科 | 擅长：失眠、脾胃、月经不调</p>
+      </div>
+      <div class="text-right text-xs text-gray-500">
+        <div><i class="fa-solid fa-qrcode mr-1"></i>已通过二维码进入</div>
+      </div>
+    </div>
+
+    <div class="tcm-card p-4">
+      <div class="flex items-center gap-2 mb-2">
+        <i class="fa-solid fa-robot text-green-600"></i>
+        <h3 class="font-semibold">医生AI分身 · 智能问诊</h3>
+      </div>
+      <p class="text-sm text-gray-600 mb-3">AI分身可先行引导描述病情、采集舌脸照片并生成结构化摘要，供医生快速了解情况。</p>
+      <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs rounded p-2 mb-3">
+        说明：AI仅提供诊前与诊后辅助，不构成诊断或处方。最终诊断以医生意见为准。
+      </div>
+      <label class="flex items-start gap-2 text-sm text-gray-700 mb-3">
+        <input id="consent" type="checkbox" class="mt-1" />
+        <span>我已阅读并同意《知情同意与隐私说明》，授权该医生的AI分身在医生监管下处理我的问诊信息。</span>
+      </label>
+      <div class="flex gap-3">
+        <button id="startAI" class="flex-1 tcm-cta rounded-lg py-2 font-medium"><i class="fa-solid fa-comments mr-1"></i>开始AI问诊</button>
+        <button id="toShop" class="w-28 bg-gray-100 rounded-lg">健康商城</button>
+      </div>
+    </div>
+
+    <div class="tcm-card p-4">
+      <div class="flex items-center gap-2 mb-2">
+        <i class="fa-solid fa-user-doctor"></i>
+        <h3 class="font-semibold">医生真人服务</h3>
+      </div>
+      <p class="text-sm text-gray-600">图文问诊、复诊咨询均由医生亲自处理。AI仅在常见问题与提醒中辅助。</p>
+      <div class="flex gap-3 mt-3">
+        <button id="toHumanChat" class="flex-1 bg-white border rounded-lg py-2">图文问诊</button>
+        <button id="toFollowup" class="flex-1 bg-white border rounded-lg py-2">复诊咨询</button>
+      </div>
+    </div>
+
+    <p class="tcm-disclaimer px-1">本页面为原型，数据示例仅供演示。AI收集信息仅供参考，医生最终诊断为准。</p>
+  </section>
+
+  <script>
+    // 设置示例医生品牌到父容器
+    const doctor = { id: 'doc_001', name: '张衡', org: '北京同仁堂', avatar: document.getElementById('docAvatar').src };
+    window.top?.postMessage({ type: 'SET_DOCTOR', payload: doctor }, '*');
+    try { window.top.sessionStorage.setItem('doctorProfile', JSON.stringify(doctor)); } catch(e) {}
+
+    const btn = document.getElementById('startAI');
+    const consent = document.getElementById('consent');
+    btn.addEventListener('click', () => {
+      if (!consent.checked) { alert('请先勾选知情同意与隐私说明'); return; }
+      // 初始化问诊状态
+      const intake = { stepsCompleted: [], createdAt: Date.now() };
+      try { window.top.sessionStorage.setItem('intakeData', JSON.stringify(intake)); } catch(e) {}
+      window.top?.postMessage({ type: 'NAVIGATE', payload: { href: '/pages/intake.html' } }, '*');
+    });
+
+    document.getElementById('toShop').addEventListener('click', () => {
+      alert('原型中仅展示入口，真实环境跳转医生专属健康商城。');
+    });
+    document.getElementById('toHumanChat').addEventListener('click', () => {
+      window.top?.postMessage({ type: 'NAVIGATE', payload: { href: '/pages/postchat.html?mode=human' } }, '*');
+    });
+    document.getElementById('toFollowup').addEventListener('click', () => {
+      window.top?.postMessage({ type: 'NAVIGATE', payload: { href: '/pages/postchat.html?mode=followup' } }, '*');
+    });
+  </script>
+</body>
+</html>
+

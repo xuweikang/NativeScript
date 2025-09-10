@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>AI收集结果摘要 · 医生预览</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="/assets/theme.css" />
+</head>
+<body class="tcm-bg-paper tcm-ink">
+  <!-- 设计说明：面向医生端的摘要视图；强调“AI仅供参考，医生做最终判断”。 -->
+  <section class="p-4 space-y-4">
+    <div class="tcm-card p-4">
+      <div class="flex items-center gap-2 mb-3">
+        <i class="fa-solid fa-clipboard-list text-green-600"></i>
+        <h3 class="font-semibold">AI收集结果摘要（预览）</h3>
+        <span class="tcm-badge ml-auto">供医生参考</span>
+      </div>
+
+      <div id="summary" class="space-y-3 text-sm text-gray-800"></div>
+
+      <div class="grid grid-cols-2 gap-3 mt-4">
+        <div class="tcm-card p-2">
+          <div class="text-xs text-gray-500 mb-1"><i class="fa-regular fa-image mr-1"></i>舌照</div>
+          <img id="tongue" class="w-full rounded" alt="舌照预览" />
+        </div>
+        <div class="tcm-card p-2">
+          <div class="text-xs text-gray-500 mb-1"><i class="fa-regular fa-image mr-1"></i>面照</div>
+          <img id="face" class="w-full rounded" alt="面照预览" />
+        </div>
+      </div>
+
+      <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs rounded p-2 mt-4">
+        注：以下辨证与建议为AI抽取摘要，仅供参考，具体诊断与处方以医生面诊意见为准。
+      </div>
+
+      <div id="aiSuggest" class="mt-3 text-sm"></div>
+
+      <div class="flex gap-3 mt-4">
+        <button id="toDoctorChat" class="flex-1 bg-white border rounded-lg py-2"><i class="fa-solid fa-user-doctor mr-1"></i>转入医生沟通</button>
+        <button id="toPostChat" class="w-40 tcm-cta rounded-lg py-2"><i class="fa-solid fa-comments mr-1"></i>进入诊后咨询</button>
+      </div>
+      <p class="tcm-disclaimer mt-2">AI摘要仅供参考，医生最终诊断为准。</p>
+    </div>
+  </section>
+
+  <script>
+    function renderSummary() {
+      const intake = JSON.parse(window.top.sessionStorage.getItem('intakeData')||'{}');
+      const captures = JSON.parse(window.top.sessionStorage.getItem('captures')||'{}');
+      const box = document.getElementById('summary');
+      box.innerHTML = '';
+      const fields = [
+        ['主诉', intake.chief || '未填写'],
+        ['起始/诱因', intake.onset || '未填写'],
+        ['持续时长', intake.duration || '未填写'],
+        ['伴随症状', (intake.symptoms||[]).join('、') || '未选择'],
+        ['既往史/过敏史', intake.history || '未填写'],
+        ['起居', `睡眠:${intake?.lifestyle?.sleep||'-'}；食欲:${intake?.lifestyle?.appetite||'-'}；情绪:${intake?.lifestyle?.emotion||'-'}；二便:${intake?.lifestyle?.stool||'-'}`]
+      ];
+      fields.forEach(([k,v])=>{
+        const row = document.createElement('div');
+        row.className = 'flex';
+        row.innerHTML = `<div class="w-24 text-gray-500">${k}</div><div class="flex-1">${v}</div>`;
+        box.appendChild(row);
+      });
+
+      // 简易AI建议（基于规则的示例，不构成诊断）
+      const suggest = [];
+      const chief = (intake.chief||'').toLowerCase();
+      if (chief.includes('失眠') || (intake?.lifestyle?.sleep==='差')) {
+        suggest.push('可能涉及心脾两虚或肝郁化火，建议调畅情志、规律作息。');
+      }
+      if ((intake.symptoms||[]).includes('乏力') || (intake?.lifestyle?.appetite==='偏少')) {
+        suggest.push('脾胃运化偏弱的可能性需结合舌象进一步判断。');
+      }
+      document.getElementById('aiSuggest').innerHTML = suggest.length
+        ? `<div class="tcm-card p-3"><b>AI参考建议</b><ul class="list-disc pl-5 mt-2">${suggest.map(s=>`<li>${s}</li>`).join('')}</ul></div>`
+        : `<div class="text-gray-500">无明显建议，建议医生结合四诊全面判断。</div>`;
+
+      // 图片预览
+      if (captures.tonguePhoto) document.getElementById('tongue').src = captures.tonguePhoto; else document.getElementById('tongue').style.display='none';
+      if (captures.facePhoto) document.getElementById('face').src = captures.facePhoto; else document.getElementById('face').style.display='none';
+    }
+
+    document.getElementById('toDoctorChat').onclick = () => {
+      window.top.postMessage({ type: 'NAVIGATE', payload: { href: '/pages/postchat.html?mode=human' } }, '*');
+    };
+    document.getElementById('toPostChat').onclick = () => {
+      window.top.postMessage({ type: 'NAVIGATE', payload: { href: '/pages/postchat.html?mode=followup' } }, '*');
+    };
+
+    renderSummary();
+  </script>
+</body>
+</html>
+

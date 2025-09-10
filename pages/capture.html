@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>舌照/面照采集 · 智能质控</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="/assets/theme.css" />
+  <style>
+    video, canvas { width: 100%; border-radius: 12px; background: #000; }
+  </style>
+</head>
+<body class="tcm-bg-paper tcm-ink">
+  <!-- 设计说明：提供实时构图指引与基础质控（清晰度/亮度/构图）。 -->
+  <section class="p-4 space-y-4">
+    <div class="tcm-card p-4">
+      <div class="flex items-center gap-2 mb-2">
+        <i class="fa-solid fa-camera text-green-600"></i>
+        <h3 class="font-semibold">舌照 / 面照 采集</h3>
+        <span class="tcm-badge ml-auto">隐私本地处理</span>
+      </div>
+
+      <div class="flex gap-2 text-sm mb-2">
+        <button id="tabTongue" class="px-3 py-1 rounded border bg-white">舌照</button>
+        <button id="tabFace" class="px-3 py-1 rounded border">面照</button>
+        <span class="text-xs text-gray-500 ml-auto">请在自然光下拍摄，避免滤镜</span>
+      </div>
+
+      <div class="capture-frame p-2">
+        <video id="video" playsinline autoplay muted></video>
+        <div class="capture-overlay">
+          <!-- 舌照提示圈/面部提示框可进一步SVG精细化，本原型用文字提示 -->
+          <div id="hint" class="capture-hint">请伸舌自然放松，取景框内居中</div>
+        </div>
+      </div>
+
+      <div class="flex gap-3 mt-3">
+        <button id="btnShot" class="flex-1 tcm-cta rounded-lg py-2 font-medium"><i class="fa-solid fa-circle-dot mr-1"></i>拍照</button>
+        <button id="btnRetake" class="w-24 bg-gray-100 rounded-lg" disabled>重拍</button>
+      </div>
+
+      <canvas id="canvas" class="mt-3" style="display:none"></canvas>
+
+      <div id="qc" class="mt-3 text-sm hidden">
+        <div class="flex items-center gap-2"><i class="fa-solid fa-wand-magic-sparkles text-green-600"></i><b>智能质控结果</b></div>
+        <ul class="list-disc pl-5 mt-1 text-gray-700" id="qcList"></ul>
+      </div>
+
+      <div class="mt-3 flex gap-3">
+        <button id="save" class="flex-1 bg-green-600 text-white rounded-lg py-2" disabled>保存并继续</button>
+        <button id="skip" class="w-28 bg-white border rounded-lg">跳过</button>
+      </div>
+      <p class="tcm-disclaimer mt-2">影像仅供医生参考，不作为自动诊断依据。</p>
+    </div>
+  </section>
+
+  <script>
+    const state = { mode: 'tongue', stream: null, shot: null };
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const hint = document.getElementById('hint');
+    const qcBox = document.getElementById('qc');
+    const qcList = document.getElementById('qcList');
+
+    async function startCamera() {
+      try {
+        state.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+        video.srcObject = state.stream;
+      } catch (e) {
+        alert('无法访问摄像头，请检查权限');
+      }
+    }
+
+    function setMode(mode) {
+      state.mode = mode;
+      hint.textContent = mode === 'tongue' ? '请伸舌自然放松，取景框内居中' : '请正视镜头，面部居中，去除眼镜遮挡';
+      document.getElementById('tabTongue').className = 'px-3 py-1 rounded border ' + (mode==='tongue'?'bg-white':'');
+      document.getElementById('tabFace').className = 'px-3 py-1 rounded border ' + (mode==='face'?'bg-white':'');
+    }
+
+    function qualityCheck(imgData, w, h) {
+      // 简易亮度与清晰度评估
+      let sum = 0; const data = imgData.data;
+      for (let i=0; i<data.length; i+=4) sum += (data[i]+data[i+1]+data[i+2])/3;
+      const avg = sum / (data.length/4);
+      // 清晰度：像素差的方差简化估计
+      let diffSum = 0, count = 0;
+      for (let y=0; y<h; y+=2) {
+        for (let x=1; x<w; x+=2) {
+          const idx = (y*w + x)*4; const prev = (y*w + (x-1))*4;
+          const g = (data[idx]+data[idx+1]+data[idx+2])/3; const gp = (data[prev]+data[prev+1]+data[prev+2])/3;
+          diffSum += Math.abs(g-gp); count++;
+        }
+      }
+      const sharp = diffSum / Math.max(1,count);
+      const qc = [];
+      qc.push(avg>60 && avg<200 ? '亮度适中' : '亮度偏暗/偏亮');
+      qc.push(sharp>8 ? '清晰度良好' : '可能有轻微模糊');
+      qc.push('构图：主体大致居中（人工确认）');
+      return { avg, sharp, qc };
+    }
+
+    document.getElementById('tabTongue').onclick = ()=>setMode('tongue');
+    document.getElementById('tabFace').onclick = ()=>setMode('face');
+
+    document.getElementById('btnShot').onclick = () => {
+      const w = video.videoWidth; const h = video.videoHeight;
+      if (!w || !h) return;
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, w, h);
+      canvas.style.display = 'block';
+      const imgData = ctx.getImageData(0,0,w,h);
+      const res = qualityCheck(imgData, w, h);
+      qcList.innerHTML = '';
+      res.qc.forEach(t=>{ const li=document.createElement('li'); li.textContent=t; qcList.appendChild(li); });
+      qcBox.classList.remove('hidden');
+      state.shot = canvas.toDataURL('image/jpeg', 0.85);
+      document.getElementById('btnRetake').disabled = false;
+      document.getElementById('save').disabled = false;
+    };
+
+    document.getElementById('btnRetake').onclick = () => {
+      canvas.style.display = 'none'; qcBox.classList.add('hidden');
+      state.shot = null; document.getElementById('save').disabled = true; this.disabled = true;
+    };
+
+    document.getElementById('save').onclick = () => {
+      try {
+        const key = state.mode === 'tongue' ? 'tonguePhoto' : 'facePhoto';
+        const prev = JSON.parse(window.top.sessionStorage.getItem('captures')||'{}');
+        prev[key] = state.shot;
+        window.top.sessionStorage.setItem('captures', JSON.stringify(prev));
+      } catch(e) {}
+      alert('已保存 ' + (state.mode==='tongue'?'舌照':'面照') + '，可继续拍摄另一项或点“跳过/继续”。');
+    };
+
+    document.getElementById('skip').onclick = () => {
+      window.top.postMessage({ type: 'NAVIGATE', payload: { href: '/pages/summary.html' } }, '*');
+    };
+
+    startCamera();
+  </script>
+</body>
+</html>
+
